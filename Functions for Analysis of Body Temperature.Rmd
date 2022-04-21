@@ -203,8 +203,8 @@ Now, fix your function to allow for the calculation of a confidence interval wit
 
 ```{r}
 conf_interval <- function(clevel = 0.95, data) {
-  xbar <- mean(data) #mean
-s <- sd(data) #standard deviation
+  xbar <- mean((!is.na(data))) #mean
+s <- sd((!is.na(data))) #standard deviation
 n <- length(data) #sample size
 t <- qt(1-(1-clevel)/2, df = n-1) #critical value for 95% interval
 LB <- xbar - t*s/sqrt(n) #lower bound

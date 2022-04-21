@@ -1,0 +1,224 @@
+---
+title: "Body Temperature and Pulse Rate"
+author: "Katelyn Navarette"
+output: git_hub
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = "")
+library(tidyverse)
+library(magrittr)
+library(ggThemeAssist)
+```
+
+
+Our goal for today is to create a few functions to help us analyze some data on body temperature.
+
+
+## The Data
+Our data contains 50 observations on body temperature in Fahrenheit, Pulse Rate, and Sex.
+```{r}
+temp <- read_csv("BodyTemp.csv")
+```
+
+
+Currently, our data includes Gender as 0 for female and 1 for male, let's fix that in our data.  In the blanks, fill in the best `pipe` to *assign* to `temp` the recoded factor for `Sex` and the recode the values 0 and 1 to Female and Male. (Hint: Look at Cheatsheet for `forcats` and do not use the default `pipe`).
+```{r}
+temp %<>%  
+  mutate(Sex = fct_recode(as.factor(Gender), 
+                             Female = "0", Male = "1" ))
+```
+
+
+
+We can use Sex as a factor here to observe differences between body temperature between the identified sexes in the data.  Go ahead and update the visualization with labels or other modifications to make it look nicer.
+```{r}
+temp %>%   
+  ggplot(aes(x = Sex, y = BodyTemp, fill = Sex)) +
+  geom_boxplot()+
+  labs(x = "Sex",
+       y = "Body Temp (F) ",
+       title = "Sex corispondance with Body Temp in Fahrenheit")+
+  scale_fill_brewer(palette="Pastel1")
+```
+
+
+## Temperature Conversion Functions
+
+### Fahrenheit to Celsius
+All of the temperature measurements are in Fahrenheit, but suppose we want to transform the measurements into Celsius. For your information, the transformation is as follows:
+
+$$C = (F - 32)*(5/9)$$
+Use the code framework below to create a function `fahrenheit_to_celsius`
+```{r}
+fahrenheit_to_celsius <- function(temp_F) {
+  temp_C <- ((temp_F - 32)*(5/9) ) #add formula 
+  return(temp_C)
+}
+```
+
+Test your function below to see if it returns the correct values for freezing and boiling.
+```{r}
+fahrenheit_to_celsius(32) #should return 0
+fahrenheit_to_celsius(212) #should return 100
+```
+
+Now you can test your function by applying it to a full vector of values from the `temp` data:
+```{r}
+fahrenheit_to_celsius(temp$BodyTemp)
+```
+
+And you can create a new variable, called temp_C and assign it to `temp` using the appropriate pipe format.
+```{r}
+temp %<>%  
+  mutate(temp_C = fahrenheit_to_celsius(BodyTemp)) 
+```
+
+Recreate the previous boxplot but for temperature in Celsius instead of Fahrenheit.
+
+```{r}
+temp %>%   
+  ggplot(aes(x = Sex, y = temp_C, fill = Sex)) +
+  geom_boxplot()+
+  labs(x = "Sex",
+       y = "Body Temp (C)",
+       title = "Sex corispondance with Body Temp in Celsius")+
+  scale_fill_brewer(palette="Pastel1")
+```
+
+
+
+### Celsius to Kelvin
+Now create a function called `celsius_to_kelvin`, with an argument called `temp_K`, that returns the temperature in degrees Kelvin.  
+
+Here is the formula: 
+
+$$ K = C + 273.15$$
+
+```{r}
+celsius_to_kelvin <- function(temp_K) {
+  temp_K <- (temp_K + 273.15) 
+  return(temp_K)
+}
+
+# freezing point of water in Kelvin
+celsius_to_kelvin(0) #should be 273.15
+```
+
+
+Now use the two functions created above to calculate temperature in Fahrenheit to Kelvin by creating a function `fahrenheit_to_kelvin()` with argument `temp_F`
+```{r}
+fahrenheit_to_kelvin <- function(temp_F) {
+  temp_K <- (((temp_F - 32)*(5/9) ) + 273.15) 
+  return(temp_K)
+} # fill in function
+
+# freezing point of water in Kelvin
+fahrenheit_to_kelvin(32.0) #should be 273.15
+```
+
+
+Add a new column to the `temp` data and create a boxplot in Kelvin. Be sure to label everything appropriately.
+
+```{r}
+temp %>%  
+  mutate(temp_K = fahrenheit_to_kelvin(BodyTemp)) %>% # add temp_K column with temperatures in Kelvin
+  ggplot(aes(x = Sex, y = temp_K, fill = Sex)) +
+  geom_boxplot()+
+  labs(x = "Sex",
+       y = "Body Temp (K)",
+       title = "Sex corispondance with Body Temp in Kelvin")+
+  scale_fill_brewer(palette="Pastel1")# create boxplot by Sex in Kelvin.
+```
+
+
+## Calculate a Confidence Interval
+In Introductory Statistics you learn about using Confidence Intervals to estimate an unknown population mean based on a sample. 
+
+If we calculate the interval "by hand" it would be as so:
+```{r}
+xbar <- mean(temp$BodyTemp) #mean
+s <- sd(temp$BodyTemp) #standard deviation
+n <- length(temp$BodyTemp) #sample size
+t <- qt(1-(1-0.95)/2, df = n-1) #critical value for 95% interval
+LB <- xbar - t*s/sqrt(n) #lower bound
+UB <- xbar + t*s/sqrt(n) #upper bound
+interval <- c(LB, UB) #interval
+interval #prints interval
+```
+ 
+Create a function to calculate a confidence interval for any data set.  The function should have the following features:  
+
+- Allow for any confidence level, but with a default of 0.95  
+- Be useful for any data set of any size that is quantitative  
+- Call it `conf_interval()`
+
+```{r}
+
+conf_interval <- function(clevel = 0.95, data) {
+  xbar <- mean(data) #mean
+s <- sd(data) #standard deviation
+n <- length(data) #sample size
+t <- qt(1-(1-clevel)/2, df = n-1) #critical value for 95% interval
+LB <- xbar - t*s/sqrt(n) #lower bound
+UB <- xbar + t*s/sqrt(n) #upper bound
+interval <- c(LB, UB) #interval
+return (interval) #prints interval
+}
+
+# test your function, the output should match the output above
+conf_interval(data = temp$BodyTemp, clevel = 0.95)
+```
+
+Now consider the following data set. 
+
+```{r}
+temp_na <- read_csv("temp_na.csv")
+```
+
+Does your function work for this new data? Why or why not?
+```{r}
+conf_interval(data = temp_na$BodyTemp)
+```
+
+>No doesnt seeing as my data set is workign in cases where there is no NA. 
+
+
+Note that the `length()` function still counts NAs, for example: 
+```{r}
+x <- c(1,2,NA)
+length(x)
+```
+
+To remove NAs from the count we can do the following calculation to count only the rows that are not NA:
+
+```{r}
+sum(!is.na(x))
+```
+Thinking back to last week and logicals in R, explain how the above function works:
+
+>this is saying from the x data set we will look at all the na's and count them up from what i understand. 
+
+Now, fix your function to allow for the calculation of a confidence interval with missing data (NAs). 
+
+```{r}
+conf_interval <- function(clevel = 0.95, data) {
+  xbar <- mean(data) #mean
+s <- sd(data) #standard deviation
+n <- length(data) #sample size
+t <- qt(1-(1-clevel)/2, df = n-1) #critical value for 95% interval
+LB <- xbar - t*s/sqrt(n) #lower bound
+UB <- xbar + t*s/sqrt(n) #upper bound
+interval <- c(LB, UB ) #interval
+return (interval) #prints interval
+}
+```
+
+Test that your function works: 
+```{r}
+conf_interval(data = temp_na$BodyTemp, clevel = 0.95)
+```
+
+
+Congrats! You've created several new functions in R - now you can make a [package](https://r-pkgs.org/).
+
